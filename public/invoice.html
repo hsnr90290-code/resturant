@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الفاتورة الرقمية الموثقة - مطبخ أبو قورة الفلاحي</title>
+    <!-- Google Fonts + Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Cairo:wght@400;700;800;900&family=Almarai:wght@400;700;800&family=Alexandria:wght@400;700;800&family=Changa:wght@400;700;800&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .invoice-card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            border: 1px solid #eee9e0;
+            max-width: 680px;
+            margin: 20px auto;
+            overflow: hidden;
+        }
+        .invoice-header-stamp {
+            background: linear-gradient(135deg, #1a1816 0%, #2a2420 100%);
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .official-seal {
+            border: 2px solid #d4a373;
+            color: #d4a373;
+            font-size: 0.8rem;
+            font-weight: 800;
+            padding: 4px 14px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <div class="container py-4">
+        <!-- كرت صورة الفاتورة الرقمية الإلكترونية الممسوحة والموثقة المربوط بالتعديل البصري -->
+        <div class="invoice-card" id="invoiceCardToCapture" data-editor-id="invoice-main-card">
+            <!-- هيدر الفاتورة الرسمية -->
+            <div class="invoice-header-stamp" data-editor-id="invoice-header-stamp-box">
+                <span class="official-seal" data-editor-id="invoice-official-seal">✓ فاتورة إلكترونية معتمدة وموثقة</span>
+                <h2 class="fw-black text-warning mb-1" id="invRestaurantName" data-editor-id="inv-restaurant-name" data-content="brandName">مطبخ أبو قورة الفلاحي</h2>
+                <p class="small text-white-50 m-0" id="invRestaurantTagline" data-editor-id="inv-restaurant-tagline" data-content="brandTagline">مطبخ المشويات والبلدي الأصيل | سجل ضريبي مالي</p>
+                <div class="mt-3 pt-3 border-top border-secondary d-flex justify-content-around small">
+                    <span>رقم الطلب: <strong id="invOrderNumber" class="text-warning">جاري التحميل...</strong></span>
+                    <span>التاريخ: <strong id="invOrderDate" class="text-white">---</strong></span>
+                </div>
+            </div>
+
+            <div class="p-4 p-md-5">
+                <!-- بيانات العميل والتوصيل المباشرة من MongoDB Atlas -->
+                <div class="bg-light p-3 rounded-3 border mb-4" data-editor-id="invoice-customer-box">
+                    <h6 class="fw-bold text-danger mb-2" data-editor-id="inv-customer-title">👤 بيانات العميل والتسليم:</h6>
+                    <div class="row g-2 small">
+                        <div class="col-6"><strong>اسم العميل:</strong> <span id="invCustomerName">---</span></div>
+                        <div class="col-6"><strong>الهاتف:</strong> <span id="invCustomerPhone">---</span></div>
+                        <div class="col-12"><strong>عنوان التوصيل:</strong> <span id="invCustomerAddress">---</span></div>
+                        <div class="col-12" id="invGpsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- جدول عناصر الطلب -->
+                <h6 class="fw-bold text-dark mb-3" data-editor-id="inv-items-table-title">📋 الوجبات والأصناف المطلوبة:</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table align-middle">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>الصنف والحجم</th>
+                                <th>الكمية</th>
+                                <th>السعر</th>
+                                <th>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invItemsTableBody">
+                            <tr><td colspan="4" class="text-center py-4 text-muted">جاري تحميل بيانات الفاتورة المباشرة...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- تفكيك الحساب المالي الإجمالي -->
+                <div class="bg-light p-3 rounded-3 border mb-4" data-editor-id="invoice-summary-box">
+                    <div class="d-flex justify-content-between mb-1 small">
+                        <span>المجموع الفرعي:</span>
+                        <span id="invSubtotal" class="fw-bold">0 ج.م</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1 small text-success" id="invDiscountRow">
+                        <span>الخصم المطبق:</span>
+                        <span id="invDiscount" class="fw-bold">0 ج.م</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1 small text-primary">
+                        <span>رسوم التوصيل:</span>
+                        <span id="invDeliveryFee" class="fw-bold">0 ج.م</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between fs-4 fw-black text-danger">
+                        <span>المبلغ الإجمالي الكلي:</span>
+                        <span id="invFinalTotal">0 ج.م</span>
+                    </div>
+                </div>
+
+                <!-- حالة الطلب الحية أونلاين + صورة الـ QR -->
+                <div class="d-flex align-items-center justify-content-between bg-white p-3 rounded-3 border mb-4">
+                    <div>
+                        <small class="text-muted d-block mb-1">حالة الطلب الحالية بالمطبخ:</small>
+                        <span id="invLiveStatusBadge" class="badge bg-warning text-dark fs-6 px-3 py-2">جاري التحقق...</span>
+                    </div>
+                    <div id="invQrImageContainer"></div>
+                </div>
+
+                <!-- أزرار الإجراءات والتحميل كـ صورة -->
+                <div class="row g-2 no-print">
+                    <div class="col-md-4">
+                        <button class="btn btn-success w-100 py-2 fw-bold" onclick="downloadInvoiceAsImage()">📸 تحميل الفاتورة كـ صورة</button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-dark w-100 py-2 fw-bold" onclick="window.print()">🖨️ طباعة / PDF</button>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="index.html" class="btn btn-brand-red w-100 py-2 fw-bold text-decoration-none">🍔 العودة للموقع</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- كود جافاسكريبت الاستعلام أونلاين وتوليد الفاتورة كـ صورة -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/main.js"></script>
+    <!-- محرك التعديل البصري المباشر بالنقر الأيمن (Hostinger-Style Live Visual Editor) -->
+    <script src="js/visual-editor.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDigitalInvoiceFromDB();
+        });
+
+        async function loadDigitalInvoiceFromDB() {
+            const pathParts = window.location.pathname.split('/');
+            let orderId = pathParts[pathParts.length - 1];
+
+            if (!orderId || orderId === 'invoice.html' || orderId === 'invoice') {
+                const urlParams = new URLSearchParams(window.location.search);
+                orderId = urlParams.get('id') || 'latest';
+            }
+
+            try {
+                const res = await fetch(`/api/orders/invoice/${orderId}`);
+                const data = await res.json();
+
+                if (data.success && data.order) {
+                    renderInvoiceUI(data.order);
+                } else {
+                    document.getElementById('invItemsTableBody').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger fw-bold">❌ لا توجد طلبات مسجلة بـ قاعدة البيانات لعرض الفاتورة</td></tr>`;
+                }
+            } catch (e) {
+                console.error('Invoice Fetch Error:', e);
+            }
+        }
+
+        function renderInvoiceUI(order) {
+            document.getElementById('invOrderNumber').innerText = order.orderNumber;
+            document.getElementById('invOrderDate').innerText = new Date(order.createdAt || Date.now()).toLocaleString('ar-EG');
+            document.getElementById('invCustomerName').innerText = order.customer ? order.customer.name : 'عميل أورا';
+            document.getElementById('invCustomerPhone').innerText = order.customer ? order.customer.phone : '-';
+            document.getElementById('invCustomerAddress').innerText = order.customer ? order.customer.address : '-';
+
+            if (order.restaurantId && order.restaurantId.name) {
+                const nameEl = document.getElementById('invRestaurantName');
+                if (nameEl) nameEl.innerText = order.restaurantId.name;
+            }
+
+            if (order.customer && order.customer.gpsLocation && order.customer.gpsLocation.mapUrl) {
+                document.getElementById('invGpsContainer').innerHTML = `<strong>موقع الـ GPS:</strong> <a href="${order.customer.gpsLocation.mapUrl}" target="_blank" class="text-danger fw-bold">📍 فتح الموقع على خرائط جوجل</a>`;
+            }
+
+            if (order.qrCodeData) {
+                document.getElementById('invQrImageContainer').innerHTML = `<img src="${order.qrCodeData}" alt="QR Code" style="width:85px; height:85px;" class="border p-1 rounded-2">`;
+            }
+
+            // رسم جدول المنتجات
+            const itemsBody = document.getElementById('invItemsTableBody');
+            itemsBody.innerHTML = (order.items || []).map(i => {
+                let sizeText = i.selectedSize && i.selectedSize.name ? ` (${i.selectedSize.name})` : '';
+                let addonsText = i.selectedAddons && i.selectedAddons.length ? `<br><small class="text-muted">إضافات: ${i.selectedAddons.map(a => a.name).join(', ')}</small>` : '';
+
+                return `
+                    <tr>
+                        <td><strong>${i.title}${sizeText}</strong>${addonsText}</td>
+                        <td>${i.quantity}</td>
+                        <td>${i.unitPrice} ج.م</td>
+                        <td><strong class="text-danger">${i.itemTotal || i.unitPrice * i.quantity} ج.م</strong></td>
+                    </tr>
+                `;
+            }).join('');
+
+            // التفنيط المالي
+            document.getElementById('invSubtotal').innerText = `${order.subtotal || order.totalPrice} ج.م`;
+            document.getElementById('invDiscount').innerText = `${order.discountAmount || 0} ج.م`;
+            document.getElementById('invDeliveryFee').innerText = `${order.deliveryFee || 0} ج.م`;
+            document.getElementById('invFinalTotal').innerText = `${order.totalPrice} ج.م`;
+
+            // حالة الطلب الحية
+            const statusBadge = document.getElementById('invLiveStatusBadge');
+            if (order.status === 'New') statusBadge.innerText = 'جديد في الانتظار ⏳';
+            else if (order.status === 'Preparing') statusBadge.innerText = 'جاري التحضير بالمطبخ 🧑‍🍳';
+            else if (order.status === 'OutForDelivery') statusBadge.innerText = 'خرج للتوصيل مع الدليفري 🛵';
+            else if (order.status === 'Delivered') { statusBadge.className = 'badge bg-success fs-6 px-3 py-2'; statusBadge.innerText = 'تم التسليم بنجاح ✅'; }
+            else if (order.status === 'Cancelled') { statusBadge.className = 'badge bg-danger fs-6 px-3 py-2'; statusBadge.innerText = 'تم إلغاء الطلب ❌'; }
+        }
+
+        // دالة تحويل وتحميل الفاتورة كـ صورة PNG مباشرة
+        function downloadInvoiceAsImage() {
+            const element = document.getElementById('invoiceCardToCapture');
+            const noPrintBtns = element.querySelector('.no-print');
+            if (noPrintBtns) noPrintBtns.style.display = 'none';
+
+            html2canvas(element, { scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `فاتورة_${document.getElementById('invOrderNumber').innerText}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                if (noPrintBtns) noPrintBtns.style.display = 'flex';
+            });
+        }
+    </script>
+</body>
+</html>
