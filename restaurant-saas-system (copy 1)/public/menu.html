@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قائمة الطعام الكاملة (المنيو) - مطبخ أبو قورة | أورا</title>
+    <!-- Google Fonts + Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800;900&family=Cairo:wght@400;700;800;900&family=Almarai:wght@400;700;800&family=Alexandria:wght@400;700;800&family=Changa:wght@400;700;800&display=swap">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header / Navbar المحدث بالموقع المربوط بالتعديل المباشر -->
+    <header class="main-navbar sticky-top shadow-sm" data-editor-id="menu-navbar-header">
+        <div class="container d-flex align-items-center justify-content-between">
+            <a href="index.html" class="brand-logo-box">
+                <div class="brand-logo-circle" data-editor-id="menu-brand-logo-icon">أبو</div>
+                <div>
+                    <h5 class="fw-black m-0 lh-1" data-editor-id="brand-name" data-content="brandName">أبو قورة ✨</h5>
+                    <small class="text-muted" style="font-size: 0.75rem;" data-editor-id="brand-tagline" data-content="brandTagline">مطبخ المشويات والبلدي الأصيل</small>
+                </div>
+            </a>
+
+            <!-- زر حساب العميل والتسجيل المباشر للجوال -->
+            <div class="d-flex d-lg-none align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-dark rounded-pill fw-bold px-3" data-bs-toggle="modal" data-bs-target="#loginModal">
+                    👤 <span id="mobileUserAuthText">دخول</span>
+                </button>
+            </div>
+
+            <div class="d-none d-lg-flex align-items-center gap-2">
+                <a href="index.html" class="nav-link-custom" data-editor-id="menu-nav-link-home">الرئيسية</a>
+                <a href="menu.html" class="nav-link-custom active" data-editor-id="menu-nav-link-menu">🍱 قائمة الأكلات (المنيو)</a>
+                <a href="checkout.html" class="nav-link-custom" data-editor-id="menu-nav-link-track">🛵 تتبع طلبي</a>
+                <button class="nav-link-custom border-0 bg-transparent" data-bs-toggle="modal" data-bs-target="#contactUsModal" data-editor-id="menu-nav-link-contact">📞 تواصل معنا</button>
+                <button class="nav-link-custom border-0 bg-transparent" onclick="toggleCartDrawer()">🛒 السلة <span id="cartBadge" class="badge bg-danger rounded-pill">0</span></button>
+
+                <div id="userHeaderArea" class="d-flex align-items-center gap-2 ms-2">
+                    <button class="nav-link-custom border-0 bg-transparent fw-bold" data-bs-toggle="modal" data-bs-target="#loginModal">👤 تسجيل الدخول / حساب جديد</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- شريط التنبيه التلقائي في حالة إغلاق المطعم أو انتهاء أوقات العمل الرسمية -->
+    <div id="restaurantClosedBanner" class="bg-danger text-white py-2 px-3 text-center fw-bold d-none sticky-top shadow-sm" style="top: 70px; z-index: 1010;">
+        <span id="restaurantClosedText">🔴 عفواً! المطبخ مغلق حالياً ولا يستقبل طلبات جديدة خارج أوقات العمل الرسمية.</span>
+    </div>
+
+    <!-- رأس صفحة المنيو الكاملة المربوطة بالـ Hostinger Visual Editor -->
+    <div class="bg-dark text-white py-5 text-center position-relative mb-4" data-editor-id="menu-page-header-box" style="background: linear-gradient(rgba(26,24,22,0.85), rgba(26,24,22,0.9)), url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1600') center/cover;">
+        <div class="container py-3">
+            <h1 class="fw-black display-5 text-warning mb-2" data-editor-id="menu-page-title" data-content="menuPageTitle">قائمة الطعام الكاملة 📜</h1>
+            <p class="lead text-light m-0" data-editor-id="menu-page-subtitle" data-content="menuPageSubtitle">تصفح أشهى المشويات والطواجن والمخبوزات الفلاحية المجهزة طازجة يومياً</p>
+        </div>
+    </div>
+
+    <!-- شريط البحث والترتيب والفلترة المتقدمة -->
+    <div class="container mb-4">
+        <div class="bg-white p-4 rounded-3 shadow-sm border" data-editor-id="search-filter-card">
+            <div class="row g-3 align-items-center">
+                <!-- البحث اللحظي بالاسم أو المكونات -->
+                <div class="col-md-7">
+                    <label class="form-label small fw-bold text-muted" data-editor-id="search-label">🔍 البحث في أطباق الطعام:</label>
+                    <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="ابحث باسم الوجبة أو المكونات (مثال: كباب، بامية، حمام...)" oninput="handleSearchAndSortInput()">
+                </div>
+                <!-- الترتيب والفلترة -->
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold text-muted" data-editor-id="sort-label">📊 ترتيب المنيو حسب:</label>
+                    <select id="sortSelect" class="form-select form-select-lg" onchange="handleSearchAndSortInput()">
+                        <option value="">الأحدث أولاً (الافتراضي)</option>
+                        <option value="price_asc">السعر: من الأقل للأعلى ⬆️</option>
+                        <option value="price_desc">السعر: من الأعلى للأقل ⬇️</option>
+                        <option value="top_sales">الأكثر مبيعاً 🏆</option>
+                        <option value="rating">الأعلى تقييماً ⭐</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- أقسام الطعام الحية المأخوذة من MongoDB -->
+            <div class="d-flex flex-wrap justify-content-center gap-2 mt-4 pt-3 border-top" id="categoryPillsContainer">
+                <!-- تحميل الأقسام بـ JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- شبكة الأصناف المباشرة من MongoDB -->
+    <main class="container mb-5">
+        <div class="row g-4" id="productsContainer">
+            <!-- جلب الوجبات بـ JS -->
+        </div>
+    </main>
+
+    <!-- السلة الجانبية المنزلقة (Slide-over Cart Drawer) -->
+    <div class="cart-drawer-overlay" id="cartDrawerOverlay" onclick="toggleCartDrawer()"></div>
+    <div class="cart-drawer" id="cartDrawer">
+        <div class="cart-drawer-header">
+            <h5 class="fw-bold m-0">🛒 سلة مأكولاتك (<span id="cartDrawerCount">0</span> صنف)</h5>
+            <button class="btn-close" onclick="toggleCartDrawer()"></button>
+        </div>
+        <div class="cart-drawer-body">
+            <div class="cart-total-banner">
+                إجمالي ثمن المأكولات: <span id="cartDrawerTotal">0</span> ج.م
+            </div>
+
+            <div id="cartDrawerItems"></div>
+
+            <div class="bg-light p-3 rounded-3 border my-3">
+                <label class="form-label small fw-bold text-dark">🏷️ هل لديك كوبون خصم؟</label>
+                <div class="input-group">
+                    <input type="text" id="couponCodeInput" class="form-control text-uppercase" placeholder="أدخل كود الخصم (مثل: SAVE20)">
+                    <button class="btn btn-dark fw-bold" onclick="applyCouponDiscount()">تطبيق</button>
+                </div>
+                <div id="couponMessage" class="mt-2 small fw-bold"></div>
+            </div>
+
+            <form onsubmit="submitOrder(event)" class="mt-3 border-top pt-3">
+                <h6 class="fw-bold text-danger mb-3">📍 بيانات التوصيل المباشر والـ GPS</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">اختر منطقة التوصيل *</label>
+                    <select id="deliveryAreaSelect" class="form-select" onchange="updateDeliveryFeeFromSelect()" required>
+                        <option value="">جاري تحميل مناطق التوصيل من MongoDB...</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">اختيار وقت الاستلام المجدول *</label>
+                    <select id="scheduledDeliveryTimeSelect" class="form-select">
+                        <option value="في أسرع وقت (ASAP)">في أسرع وقت ممكن (ASAP)</option>
+                        <option value="خلال ساعة واحدة">خلال ساعة واحدة من الآن</option>
+                        <option value="توقيت العشاء (08:00 مساءً)">توقيت العشاء (08:00 مساءً)</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">اسمك الكريم *</label>
+                    <input type="text" id="custName" class="form-control" placeholder="اكتب اسمك الثلاثي" required>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">📞 رقم التليفون للاتصال *</label>
+                        <input type="tel" id="custPhone" class="form-control" placeholder="01012345678" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">💬 رقم الواتساب للفواتير *</label>
+                        <input type="tel" id="custWhatsappPhone" class="form-control" placeholder="01012345678" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">العنوان بالتفصيل *</label>
+                    <textarea id="custAddress" class="form-control" rows="2" placeholder="المنطقة، الشارع، رقم العمارة، الدور..." required></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">🧭 تحديد موقعك الجغرافي بالـ GPS:</label>
+                    <div id="map" style="height: 180px; border-radius: 12px;" class="border mb-2"></div>
+                    <button type="button" class="btn btn-sm btn-outline-dark w-100" onclick="locateUserGPS()">🛰️ تحديد موقعي التلقائي بالـ GPS</button>
+                    <input type="hidden" id="custLat">
+                    <input type="hidden" id="custLng">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">ملاحظات إضافية على الطلب</label>
+                    <input type="text" id="custNotes" class="form-control" placeholder="مثال: بدون بصل / زيادة صوص">
+                </div>
+
+                <div class="bg-light p-3 rounded-3 border mb-3">
+                    <div class="d-flex justify-content-between mb-1 small">
+                        <span>المجموع الفرعي:</span>
+                        <span id="summarySubtotal" class="fw-bold">0 ج.م</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1 small text-success">
+                        <span>الخصم المطبق:</span>
+                        <span id="summaryDiscount" class="fw-bold">0 ج.م</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1 small text-primary">
+                        <span>رسوم التوصيل:</span>
+                        <span id="summaryDeliveryFee" class="fw-bold">0 ج.م</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between fs-5 fw-black text-danger">
+                        <span>المبلغ الإجمالي الكلي:</span>
+                        <span id="summaryFinalTotal">0 ج.م</span>
+                    </div>
+                </div>
+
+                <!-- زر تأكيد الطلب المربوط بحالة الفتح والإغلاق -->
+                <button type="submit" id="submitOrderBtn" class="btn btn-brand-red w-100 py-3 shadow fs-6">
+                    🚀 تأكيد وإرسال الطلب للمطبخ والواتساب
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- مودال "تواصل معنا" -->
+    <div class="modal fade" id="contactUsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header-custom bg-dark text-white">
+                    <h4 class="fw-bold m-0 text-warning">📞 تواصل مع مطبخ أبو قورة</h4>
+                    <small class="text-white-50">بيانات التواصل الرسمية والمباشرة المعتمدة بالداتا بيز</small>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <small class="text-muted d-block mb-1">💬 الخط الساخن والواتساب المباشر:</small>
+                        <h4 class="fw-black text-success direction-ltr" id="contactWhatsappDisplay">01120751467</h4>
+                        <a id="contactWhatsappLink" href="#" target="_blank" class="btn btn-success btn-sm fw-bold rounded-pill px-4 mt-2">
+                            📱 مراسلة المطبخ عبر الواتساب الان
+                        </a>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <small class="text-muted d-block mb-1">📞 هاتف الطلبات والاستفسارات:</small>
+                        <h4 class="fw-black text-dark direction-ltr" id="contactPhoneDisplay">01120751467</h4>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border mb-2">
+                        <small class="text-muted d-block mb-1">⏰ مواعيد وساعات استقبال الطلبات:</small>
+                        <strong class="fw-bold text-danger" id="contactWorkingHoursDisplay">يومياً من 10:00 AM حتى 12:00 AM</strong>
+                    </div>
+
+                    <button class="btn btn-brand-dark w-100 py-2 mt-3 fw-bold" data-bs-dismiss="modal">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال تخصيص أحجام وإضافات الأصناف -->
+    <div class="modal fade" id="productCustomModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header-custom">
+                    <h5 class="fw-bold m-0" id="customModalTitle">تخصيص الوجبة</h5>
+                    <button class="btn-close position-absolute start-0 ms-3" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="text-muted small" id="customModalDesc"></p>
+                    <div id="modalSizesContainer" class="mb-3"></div>
+                    <div id="modalAddonsContainer" class="mb-3"></div>
+                    <div class="d-flex align-items-center justify-content-between border-top pt-3">
+                        <span class="fs-4 fw-black text-danger" id="customModalPrice">0 ج.م</span>
+                        <button class="btn btn-brand-red px-4 py-2" onclick="confirmAddToCartCustomized()">🛒 إضافة للسلة</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال نجاح الطلب + QR الفاتورة الحقيقي والموقّع من السيرفر -->
+    <div class="modal fade" id="qrSuccessModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-center p-4 rounded-4">
+                <h4 class="fw-black text-success mb-1">🎉 تم تسجيل طلبك بنجاح!</h4>
+                <p class="text-muted small mb-3">
+                    رقم الطلب: <strong id="qrModalOrderNumber" class="text-dark"></strong> |
+                    الإجمالي: <strong id="qrModalTotal" class="text-danger"></strong>
+                </p>
+
+                <img id="qrModalImage" src="" alt="كود QR لفاتورتك" class="border p-2 shadow-sm rounded-3 mx-auto d-block" style="width:220px;">
+
+                <p class="small text-muted mt-3 mb-4">
+                    امسح الكود ده للتأكد إن الفاتورة أصلية ولمتابعة حالة طلبك لحظياً
+                </p>
+
+                <button class="btn btn-brand-dark w-100 py-2 fw-bold" data-bs-dismiss="modal">تمام 👍</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- الشريط السفلي العائم للجوال -->
+    <nav class="mobile-bottom-nav">
+        <a href="index.html" class="mobile-nav-item">
+            <span class="icon">🏠</span>
+            <span>الرئيسية</span>
+        </a>
+        <a href="menu.html" class="mobile-nav-item active">
+            <span class="icon">🍱</span>
+            <span>المنيو</span>
+        </a>
+        <a href="#" class="mobile-nav-item" onclick="toggleCartDrawer(); return false;">
+            <span class="icon">🛒</span>
+            <span>السلة</span>
+        </a>
+        <a href="checkout.html" class="mobile-nav-item">
+            <span class="icon">📋</span>
+            <span>طلباتي</span>
+        </a>
+    </nav>
+
+    <!-- مودال الحسابات الشامل -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header-custom p-4 pb-0 text-center">
+                    <h4 class="fw-black m-0 text-dark">مرحباً بك في أورا ✨</h4>
+                    <small class="text-muted">سجل دخولك أو أنشئ حساباً جديداً لمتابعة طلباتك ومفضلتك</small>
+                    
+                    <div class="nav nav-pills nav-justified my-3 bg-light p-1 rounded-pill border" role="tablist">
+                        <button class="nav-link active rounded-pill fw-bold py-2" id="pills-login-tab" data-bs-toggle="pill" data-bs-target="#pills-login" type="button" role="tab">🔑 تسجيل الدخول</button>
+                        <button class="nav-link rounded-pill fw-bold py-2" id="pills-register-tab" data-bs-toggle="pill" data-bs-target="#pills-register" type="button" role="tab">✨ إنشاء حساب جديد</button>
+                    </div>
+                </div>
+
+                <div class="modal-body p-4 pt-2">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="pills-login" role="tabpanel">
+                            <form onsubmit="handleCustomerLogin(event)">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">البريد الإلكتروني *</label>
+                                    <input type="email" id="loginEmail" class="form-control" placeholder="name@example.com" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">كلمة المرور *</label>
+                                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required>
+                                </div>
+                                <button type="submit" class="btn btn-brand-dark w-100 py-2.5 fw-bold shadow">تسجيل الدخول الآمن 🔑</button>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade" id="pills-register" role="tabpanel">
+                            <form onsubmit="handleCustomerRegister(event)">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">الاسم الكامل *</label>
+                                    <input type="text" id="regCustName" class="form-control" placeholder="مثال: أحمد محمود" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">البريد الإلكتروني *</label>
+                                    <input type="email" id="regCustEmail" class="form-control" placeholder="name@example.com" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">رقم الهاتف *</label>
+                                    <input type="tel" id="regCustPhone" class="form-control" placeholder="01012345678" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">كلمة المرور القوية *</label>
+                                    <input type="password" id="regCustPassword" class="form-control" placeholder="••••••••" minlength="6" required>
+                                </div>
+                                <button type="submit" class="btn btn-brand-red w-100 py-2.5 fw-bold shadow">🚀 إنشاء وتفعيل حسابي الجديد</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- التذييل المربوط بالتعديل البصري المباشر -->
+    <footer class="bg-dark text-white py-4 text-center border-top mt-5" data-editor-id="menu-footer">
+        <div class="container">
+            <p class="m-0 small text-white-50" data-editor-id="footer-copyright-text" data-content="footerText">جميع الحقوق محفوظة © 2026 مطبخ أبو قورة - طعم بلدي أصيل</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/main.js"></script>
+    <!-- محرك التعديل البصري المباشر بالنقر الأيمن (Hostinger-Style Live Visual Editor) -->
+    <script src="js/visual-editor.js"></script>
+</body>
+</html>
