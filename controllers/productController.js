@@ -231,9 +231,17 @@ exports.createProduct = async (req, res) => {
 // 4. تعديل شامل للوجبة وأوسمتها ومخزونها في MongoDB Atlas
 exports.updateProduct = async (req, res) => {
     try {
-        const { category, keywords } = req.body;
+        const { category, keywords, price, discountPrice } = req.body;
 
         let updateData = { ...req.body };
+
+        // ⚡ فحص آمن ومباشر لمطابقة سعر الخصم بالسعر الأساسي قبل حفظ التعديلات
+        if (discountPrice && price && Number(discountPrice) > Number(price)) {
+            return res.status(400).json({
+                success: false,
+                message: '🚫 سعر الخصم لا يمكن أن يكون أكبر من السعر الأساسي'
+            });
+        }
 
         if (category) {
             let categoryObj = await Category.findOne({ name: category });

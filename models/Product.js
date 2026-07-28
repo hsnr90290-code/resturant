@@ -46,13 +46,28 @@ const productSchema = new mongoose.Schema({
         required: [true, 'السعر الأساسي مطلوب'],
         min: [0, 'السعر يجب أن يكون رقماً موجباً'] 
     },
-    discountPrice: { 
+discountPrice: { 
         type: Number, 
         default: 0,
         min: [0, 'سعر الخصم يجب أن يكون رقماً موجباً'],
         validate: {
             validator: function (val) {
-                return val <= this.price;
+                // إذا كان سعر الخصم 0 أو غير مدخل، فالحقل صالح
+                if (!val || Number(val) === 0) return true;
+
+                // استخراج السعر الأساسي حسب سياق التشغيل (إنشاء أو تحديث)
+                let basePrice = this.price;
+
+                // في حالة التحديث عبر findByIdAndUpdate، جلب السعر من كائن التحديث
+                if (basePrice === undefined && typeof this.getUpdate === 'function') {
+                    const update = this.getUpdate();
+                    basePrice = update.price ?? update.$set?.price;
+                }
+
+                // إذا تعذر جلب السعر الأساسي من كائن التعديل، يتخطى الفحص ويترك الفحص للكنترولر
+                if (basePrice === undefined || basePrice === null) return true;
+
+                return Number(val) <= Number(basePrice);
             },
             message: 'سعر الخصم لا يمكن أن يكون أكبر من السعر الأساسي'
         }
