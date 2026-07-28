@@ -42,12 +42,12 @@ exports.checkSuperAdminExists = async (req, res) => {
         if (existingAdmin) {
             return res.json({ 
                 exists: true, 
-                message: 'المالك الأصلي مسجل بالنظام.' 
+                message: 'المالك الأصلي مسجل بالفعل بالنظام.' 
             });
         } else {
             return res.json({ 
                 exists: false, 
-                message: 'لا يوجد حساب سوبر أدمن مسجل.' 
+                message: 'لا يوجد حساب سوبر أدمن مسجل. يمكنك إنشاء أول حساب للمالك.' 
             });
         }
     } catch (error) {
@@ -55,36 +55,54 @@ exports.checkSuperAdminExists = async (req, res) => {
     }
 };
 
-// 2. إنشاء حساب المالك الأصلي (SuperAdmin)
+// ==============================================================================
+// 2. إنشاء حساب المالك الأصلي (SuperAdmin) - الفحص الصارم المباشر أولاً
+// ==============================================================================
 exports.registerSuperAdmin = async (req, res) => {
     try {
+        // 🔒 الخطوة الأولى والأهم: التحقق فوراً إذا كان هناك سوبر أدمن مسجل في قاعدة البيانات
+        const existingAdmin = await User.findOne({ role: { $in: ['superadmin', 'admin'] } }).lean();
+
+        if (existingAdmin) {
+            await logSecurityEvent(
+                null, 
+                req.body.name || 'مجهول', 
+                req.body.email || 'unknown@domain.com', 
+                'UNAUTHORIZED_SUPERADMIN_REGISTER_ATTEMPT', 
+                'FAILED', 
+                req, 
+                'محاولة تسجيل حساب سوبر أدمن جديد برغم وجود مالك أصلي مسجل بالفعل'
+            );
+
+            // ❌ إرجاع رسالة واضحة تمنع التسجيل نهائياً
+            return res.status(400).json({ 
+                success: false, 
+                message: '🚫 عفواً! يوجد بالفعل حساب سوبر أدمن (مالك) مسجل بالنظام، لا يمكن تسجيل حساب سوبر أدمن جديد.' 
+            });
+        }
+
+        // الخطوة الثانية: التحقق من اكتمال الحقول
         const { name, email, phone, password, adminSecretCode } = req.body;
 
         if (!name || !email || !phone || !password) {
             return res.status(400).json({ success: false, message: 'جميع البيانات مطلوبة لإنشاء المالك الأصلي' });
         }
 
+        // الخطوة الثالثة: التحقق من كود الأمان السري للنظام (إذا كان أول سوبر أدمن)
         const masterSecretKey = process.env.ADMIN_SECRET_KEY || 'ORA_SUPERADMIN_SECRET_2026';
         if (!adminSecretCode || adminSecretCode.trim() !== masterSecretKey) {
             await logSecurityEvent(null, name, email, 'INVALID_ADMIN_SECRET_KEY', 'FAILED', req, 'محاولة إنشاء أدمن بكود أمان سري خاطئ');
             return res.status(403).json({ 
                 success: false, 
-                message: '🚫 معذرة، لا يمكنك تسجيل الدخول كـ سوبر أدمن!' 
+                message: '🚫 كود الأمان السري غير صحيح! غير مصرح لك بإنشاء حساب المالك الأصلي.' 
             });
         }
 
-        const existingAdmin = await User.findOne({ role: { $in: ['superadmin', 'admin'] } }).lean();
-        if (existingAdmin) {
-            await logSecurityEvent(null, name, email, 'UNAUTHORIZED_SUPERADMIN_REGISTER_ATTEMPT', 'FAILED', req, 'محاولة تسلل لإنشاء أدمن آخر بعد وجود أدمن بالفعل');
-            return res.status(400).json({ 
-                success: false, 
-                message: '🚫 معذرة، لا يمكنك الدخول بحساب سوبر أدمن!' 
-            });
-        }
-
+        // الخطوة الرابعة: جلب أو إنشاء بيانات المطعم
         let restaurant = await Restaurant.findOne({ slug: 'abu-qoura' });
         if (!restaurant) restaurant = await Restaurant.create({ name: 'مطبخ أبو قورة الفلاحي', slug: 'abu-qoura' });
 
+        // الخطوة الخامسة: إنشاء حساب السوبر أدمن الأول والوحيد
         const user = await User.create({
             restaurantId: restaurant._id,
             name: name.trim(),
@@ -97,7 +115,7 @@ exports.registerSuperAdmin = async (req, res) => {
         const token = generateToken(user._id, user.role, user.restaurantId);
         res.cookie('jwt', token, COOKIE_OPTIONS);
 
-        await logSecurityEvent(restaurant._id, user.name, user.email, 'REGISTER_SUPERADMIN', 'SUCCESS', req, 'تم إنشاء وتثبيت المالك الأصلي بنجاح');
+        await logSecurityEvent(restaurant._id, user.name, user.email, 'REGISTER_SUPERADMIN', 'SUCCESS', req, 'تم إنشاء وتثبيت المالك الأصلي الأوحد بنجاح');
 
         res.status(201).json({
             success: true,

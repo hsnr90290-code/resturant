@@ -93,6 +93,7 @@ async function initAdminSessionCheck() {
 }
 
 // إنشاء حساب السوبر أدمن
+// إنشاء حساب السوبر أدمن
 async function submitSuperAdminRegister(e) {
     e.preventDefault();
     const name = document.getElementById('regAdminName').value.trim();
@@ -115,12 +116,14 @@ async function submitSuperAdminRegister(e) {
             currentAdminUser = data.user;
             showMainPortal();
         } else {
-            alert(data.message || '🚫 معذرة، لا يمكنك تسجيل الدخول كـ سوبر أدمن!');
-            window.location.href = '/index.html';
+            // عرض الرسالة الواردة من السيرفر (مثل: يوجد بالفعل حساب سوبر أدمن مسجل بالنظام)
+            alert(data.message || '🚫 لا يمكن تسجيل حساب سوبر أدمن جديد!');
+            // إعادة الفحص فوراً لإخفاء نموذج التسجيل وتحويل المستخدم لنموذج الدخول
+            initAdminSessionCheck();
         }
     } catch (err) {
-        alert('🚫 معذرة، لا يمكنك تسجيل الدخول كـ سوبر أدمن!');
-        window.location.href = '/index.html';
+        alert('🚫 حدث خطأ أثناء الاتصال بالسيرفر!');
+        initAdminSessionCheck();
     }
 }
 
