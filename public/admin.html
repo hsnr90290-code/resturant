@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - إدارة مطبخ أبو قورة الفلاحي</title>
+    <!-- Google Fonts + Bootstrap 5 RTL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-light">
+
+    <!-- ملف الصوت للتنبيه اللحظي -->
+    <audio id="orderNotificationSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <!-- الهيدر العلوي للوحة التحكم -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3 no-print admin-topbar">
+        <div class="container-fluid px-3 px-md-4 d-flex flex-wrap align-items-center gap-2">
+            <a class="navbar-brand d-flex align-items-center gap-2 me-auto" href="#">
+                <i class="fa-solid fa-crown fs-3"></i>
+                <div>
+                    <h5 class="fw-bold m-0 text-warning">أبو قورة ✨</h5>
+                    <small class="text-white-50 admin-topbar-subtitle">لوحة إدارة المبيعات والمطبخ</small>
+                </div>
+            </a>
+            <div class="d-flex align-items-center gap-2 admin-topbar-actions">
+                <a href="index.html" class="btn btn-outline-light btn-sm rounded-pill" target="_blank" title="معاينة الموقع مباشر"><i class="fa-solid fa-globe"></i><span class="btn-label"> معاينة الموقع</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4 no-print">
+        <!-- كرت هيدر المطعم السحابي -->
+        <div class="bg-white p-4 rounded-3 shadow-sm border mb-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-dark text-warning p-3 rounded-circle fs-2 admin-header-icon"><i class="fa-solid fa-kitchen-set"></i></div>
+                    <div>
+                        <h3 class="fw-black m-0 admin-portal-title">إدارة مطبخ أبو قورة الفلاحي</h3>
+                        <p class="text-muted m-0 small">لوحة تحكم احترافية لإدارة الطلبات والمنيو والأقسام والصور والمبيعات</p>
+                    </div>
+                </div>
+                <span class="audit-badge-success fs-6"><i class="fa-solid fa-cloud-arrow-up"></i> مزامنة سحابية نشطة</span>
+            </div>
+        </div>
+
+        <!-- التبويبات الرئيسية (Tabs Bar) -->
+        <div class="admin-tabs-scroll mb-4 bg-white rounded-3 shadow-sm px-2 pt-2">
+            <button class="admin-tab-btn active" onclick="switchAdminTab('ordersTab', this)"><i class="fa-solid fa-box-open"></i> الطلبات والعمليات</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('dishesTab', this)"><i class="fa-solid fa-utensils"></i> الأطباق والأصناف</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('categoriesTab', this)"><i class="fa-solid fa-folder-tree"></i> أقسام المنيو</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('usersTab', this)"><i class="fa-solid fa-user-shield"></i> الحسابات والموظفين</button>
+        </div>
+
+        <!-- ================= التبويب الأول: الطلبات والعمليات ================= -->
+        <div id="ordersTab" class="admin-tab-content">
+            <!-- كرت إعدادات الواتساب لتلقي الطلبات -->
+            <div class="bg-white p-4 rounded-3 shadow-sm border mb-4">
+                <h6 class="fw-bold"><i class="fa-brands fa-whatsapp fs-5"></i> رقم الواتساب لاستقبال الفواتير وموقع العميل</h6>
+                <p class="text-muted small">عندما يطلب العميل، يقوم النظام بتوجيهه تلقائياً إلى رقم الواتساب المسجل هنا لإتمام الطلب مع رابط الخريطة.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <input type="tel" id="whatsappInput" class="form-control" value="01120751467" style="max-width: 260px;">
+                    <button class="btn btn-brand-dark text-nowrap" onclick="saveWhatsappNumber()"><i class="fa-solid fa-floppy-disk"></i> حفظ الرقم جديد</button>
+                </div>
+            </div>
+
+            <!-- كروت الإحصائيات الأربعة -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card-gold text-center">
+                        <i class="fa-solid fa-sack-dollar fs-1 text-danger"></i>
+                        <h6 class="text-muted mt-2 mb-1">أرباح المبيعات</h6>
+                        <h3 class="fw-black text-danger m-0" id="statRevenue">0 ج.م</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card-gold text-center">
+                        <i class="fa-solid fa-box-open fs-1 text-primary"></i>
+                        <h6 class="text-muted mt-2 mb-1">إجمالي الطلبات</h6>
+                        <h3 class="fw-black text-primary m-0" id="statOrdersCount">0</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card-gold text-center">
+                        <i class="fa-solid fa-hourglass-half fs-1 text-warning"></i>
+                        <h6 class="text-muted mt-2 mb-1">في الانتظار</h6>
+                        <h3 class="fw-black text-warning m-0" id="statPendingCount">0</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card-gold text-center">
+                        <i class="fa-solid fa-fire-burner fs-1 text-success"></i>
+                        <h6 class="text-muted mt-2 mb-1">قيد التحضير</h6>
+                        <h3 class="fw-black text-success m-0" id="statPreparingCount">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- فلاتر الطلبات والبحث -->
+            <div class="bg-white p-3 rounded-3 shadow-sm border mb-4 admin-toolbar-row">
+                <div class="admin-filter-scroll">
+                    <button class="btn btn-sm btn-dark rounded-pill px-3" onclick="filterAdminOrders('all')">الكل</button>
+                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3" onclick="filterAdminOrders('Pending')"><i class="fa-regular fa-clock"></i> قيد الانتظار</button>
+                    <button class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="filterAdminOrders('Preparing')"><i class="fa-solid fa-fire-burner"></i> يتم تحضيرها</button>
+                    <button class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="filterAdminOrders('Delivered')"><i class="fa-solid fa-circle-check"></i> تم تسليمها</button>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="filterAdminOrders('Cancelled')"><i class="fa-solid fa-circle-xmark"></i> تم رفضها</button>
+                </div>
+                <div class="input-group input-group-sm admin-search-group">
+                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" class="form-control" placeholder="ابحث باسم العميل أو رقم الطلب..." oninput="searchAdminOrders(this.value)">
+                </div>
+            </div>
+
+            <!-- جدول عرض الطلبات -->
+            <div class="bg-white p-4 rounded-3 shadow-sm border admin-section-card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>اسم العميل والتليفون</th>
+                                <th>العنوان والـ GPS</th>
+                                <th>الإجمالي</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات والطباعة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminOrdersTableBody">
+                            <!-- جلب الطلبات بـ JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= التبويب الثاني: الأطباق والأصناف ================= -->
+        <div id="dishesTab" class="admin-tab-content d-none">
+            <div class="admin-toolbar-row admin-toolbar-row--simple mb-4">
+                <button class="btn btn-brand-dark" data-bs-toggle="modal" data-bs-target="#addDishModal"><i class="fa-solid fa-plus"></i> إضافة طبق جديد للمنيو</button>
+                <div class="input-group input-group-sm admin-search-group">
+                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" class="form-control" placeholder="ابحث في أصناف الطعام...">
+                </div>
+            </div>
+            <div class="row g-4" id="adminDishesGrid">
+                <!-- جلب كروت الأصناف بـ JS -->
+            </div>
+        </div>
+
+        <!-- ================= التبويب الثالث: أقسام المنيو ================= -->
+        <div id="categoriesTab" class="admin-tab-content d-none">
+            <div class="bg-white p-4 rounded-3 shadow-sm border mb-4">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-folder-tree"></i> إضافة قسم وجروب طعام جديد للمنيو</h5>
+                <form onsubmit="addNewCategory(event)" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">اسم القسم بالعربية *</label>
+                        <input type="text" id="catNameAr" class="form-control" placeholder="مثال: طواجن الفرن الفخارية" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">اسم القسم بالإنجليزية</label>
+                        <input type="text" id="catNameEn" class="form-control" placeholder="e.g. Claypots">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-brand-dark"><i class="fa-solid fa-plus"></i> إنشاء قسم الطعام</button>
+                    </div>
+                </form>
+            </div>
+
+            <h5 class="fw-bold mb-3">أقسام المنيو الحالية ومفاتيحها</h5>
+            <div class="bg-white p-3 rounded-3 shadow-sm border" id="adminCategoriesList">
+                <!-- قائمة الأقسام بـ JS -->
+            </div>
+        </div>
+
+        <!-- ================= التبويب الرابع: الحسابات وسجل الأمان ================= -->
+        <div id="usersTab" class="admin-tab-content d-none">
+            <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-shield"></i> قائمة الحسابات المسجلة بقاعدة البيانات</h5>
+            <div class="bg-white p-4 rounded-3 shadow-sm border mb-5">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>الاسم والبريد</th>
+                                <th>الرتبة والصلاحية</th>
+                                <th>تاريخ التسجيل</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>admin</strong><br><small class="text-muted">admin@ora.com</small></td>
+                                <td><span class="badge bg-warning text-dark">المدير الأصلي (المخول المباشر)</span></td>
+                                <td>25 يوليو 2026</td>
+                                <td><button class="btn btn-sm btn-outline-danger">حظر</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>youssef</strong><br><small class="text-muted">eyt@gmail.com</small></td>
+                                <td><span class="badge bg-secondary">عميل / زائر</span></td>
+                                <td>25 يوليو 2026</td>
+                                <td><button class="btn btn-sm btn-outline-danger">حظر</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- سجل الأمان والرقابة -->
+            <h5 class="fw-bold mb-3 text-danger"><i class="fa-solid fa-shield-halved"></i> سجل الأمان والرقابة ومراقبة الدخول</h5>
+            <div class="bg-white p-4 rounded-3 shadow-sm border">
+                <p class="text-muted small mb-3">يعرض هذا السجل آخر محاولات تسجيل الدخول للوحة التحكم لضمان أمان حساب المالك الرئيسي والتعرف الفوري على أي محاولات مشبوهة.</p>
+                <div class="table-responsive">
+                    <table class="table table-sm text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>اسم المسؤول</th>
+                                <th>البريد المستخدم</th>
+                                <th>الحالة الأمنية</th>
+                                <th>عنوان الـ IP</th>
+                                <th>بيانات الجهاز</th>
+                                <th>التوقيت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>admin</td>
+                                <td>admin@ora.com</td>
+                                <td><span class="audit-badge-success">نجاح الدخول</span></td>
+                                <td>169.254.169.126</td>
+                                <td>Chrome / Safari</td>
+                                <td>25 يوليو، 07:22 م</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال إضافة صنف طبق جديد للمنيو -->
+    <div class="modal fade" id="addDishModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header-custom">
+                    <h5 class="fw-bold m-0"><i class="fa-solid fa-utensils"></i> إضافة طبق جديد للمنيو</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form onsubmit="addNewDish(event)">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">اسم الطبق *</label>
+                            <input type="text" id="dishTitle" class="form-control" placeholder="مثال: كباب وكفتة أورا" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">القسم</label>
+                            <select id="dishCategory" class="form-select">
+                                <option value="مشاوي">مشاوي</option>
+                                <option value="طواجن">طواجن</option>
+                                <option value="مقبلات">مقبلات</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">السعر (ج.م) *</label>
+                            <input type="number" id="dishPrice" class="form-control" placeholder="350" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">الوصف</label>
+                            <textarea id="dishDesc" class="form-control" rows="2" placeholder="وصف مكونات الطبق..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">رابط صورة الطبق</label>
+                            <input type="text" id="dishImg" class="form-control" placeholder="https://...">
+                        </div>
+                        <button type="submit" class="btn btn-brand-red w-100 fw-bold py-2"><i class="fa-solid fa-floppy-disk"></i> حفظ ونشر الطبق</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- منطقة الطباعة الحرارية 80mm -->
+    <div id="printableReceipt" class="print-only"></div>
+
+    <!-- Socket.io + Bootstrap JS + Admin JS -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
